@@ -124,7 +124,7 @@ func (s *ReCaptchaSuite) TestVerifyInvalidSolutionNoRemoteIp(c *C) {
 		client: &mockInvalidSolutionClient{},
 	}
 
-	_, err := captcha.Verify("mycode")
+	err := captcha.Verify("mycode")
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
@@ -168,11 +168,11 @@ func (s *ReCaptchaSuite) TestVerifyWithoutOptions(c *C) {
 		client: &mockSuccessClientNoOptions{},
 	}
 
-	_, err := captcha.Verify("mycode")
+	err := captcha.Verify("mycode")
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockFailedClientNoOptions{}
-	_, err = captcha.Verify("mycode")
+	err = captcha.Verify("mycode")
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
@@ -216,11 +216,11 @@ func (s *ReCaptchaSuite) TestVerifyWithRemoteIPOption(c *C) {
 		client: &mockSuccessClientWithRemoteIPOption{},
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{RemoteIP: "123.123.123.123"})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{RemoteIP: "123.123.123.123"})
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockFailClientWithRemoteIPOption{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{RemoteIP: "123.123.123.123"})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{RemoteIP: "123.123.123.123"})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
@@ -265,18 +265,18 @@ func (s *ReCaptchaSuite) TestVerifyWithHostnameOption(c *C) {
 		client: &mockSuccessClientWithHostnameOption{},
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockFailClientWithHostnameOption{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
 	c.Check(recaptchaErr.RequestError, Equals, false)
 	c.Check(err, ErrorMatches, "invalid response hostname 'test2.com', while expecting 'test.com'")
 	captcha.client = &mockFailedClientNoOptions{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{Hostname: "test.com"})
 	c.Assert(err, NotNil)
 	c.Check(err, ErrorMatches, "remote error codes:.*")
 	c.Check((err.(*Error)).ErrorCodes, DeepEquals, []string{"invalid-input-response", "bad-request"})
@@ -300,11 +300,11 @@ func (s *ReCaptchaSuite) TestVerifyWithResponseOption(c *C) {
 		horloge: &mockClockWithinRespenseTime{},
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{ResponseTime: 5 * time.Second})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{ResponseTime: 5 * time.Second})
 	c.Assert(err, IsNil)
 
 	captcha.horloge = &mockClockOverRespenseTime{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{ResponseTime: 5 * time.Second})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{ResponseTime: 5 * time.Second})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
@@ -349,11 +349,11 @@ func (s *ReCaptchaSuite) TestVerifyWithApkPackageNameOption(c *C) {
 		client: &mockSuccessClientWithApkPackageNameOption{},
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{ApkPackageName: "com.test.app"})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{ApkPackageName: "com.test.app"})
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockFailClientWithApkPackageNameOption{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{ApkPackageName: "com.test.app"})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{ApkPackageName: "com.test.app"})
 	c.Assert(err, NotNil)
 	c.Check(err, ErrorMatches, "invalid response ApkPackageName 'com.test.app2', while expecting 'com.test.app'")
 
@@ -399,11 +399,11 @@ func (s *ReCaptchaSuite) TestV3VerifyWithActionOption(c *C) {
 		Version: V3,
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage"})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage"})
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockV3FailClientWithActionOption{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage"})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage"})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
@@ -449,23 +449,23 @@ func (s *ReCaptchaSuite) TestV3VerifyWithThresholdOption(c *C) {
 		Version: V3,
 	}
 
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.6})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.6})
 	c.Assert(err, IsNil)
 
 	captcha.client = &mockV3FailClientWithThresholdOption{}
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.6})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.6})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok := err.(*Error)
 	c.Check(ok, Equals, true)
 	c.Check(recaptchaErr.RequestError, Equals, false)
 	c.Check(err, ErrorMatches, "received score '0.230000', while expecting minimum '0.600000'")
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{})
 	c.Assert(err, NotNil)
 	recaptchaErr, ok = err.(*Error)
 	c.Check(ok, Equals, true)
 	c.Check(recaptchaErr.RequestError, Equals, false)
 	c.Check(err, ErrorMatches, "received score '0.230000', while expecting minimum '0.500000'")
-	_, err = captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.23})
+	err = captcha.VerifyWithOptions("mycode", VerifyOption{Threshold: 0.23})
 	c.Assert(err, IsNil)
 }
 
@@ -489,7 +489,7 @@ func (s *ReCaptchaSuite) TestV2VerifyWithV3IgnoreOptions(c *C) {
 		client:  &mockV3SuccessClientWithThresholdOption{},
 		Version: V2,
 	}
-	_, err := captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage", Threshold: 0.5})
+	err := captcha.VerifyWithOptions("mycode", VerifyOption{Action: "homepage", Threshold: 0.5})
 	c.Assert(err, IsNil)
 }
 
