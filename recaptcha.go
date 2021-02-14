@@ -29,7 +29,8 @@ type reCHAPTCHARequest struct {
 	RemoteIP string `json:"remoteip,omitempty"`
 }
 
-type reCHAPTCHAResponse struct {
+// ReCHAPTCHAResponse holds a response from recaptcha
+type ReCHAPTCHAResponse struct {
 	Success        bool      `json:"success"`
 	ChallengeTS    time.Time `json:"challenge_ts"`
 	Hostname       string    `json:"hostname,omitempty"`
@@ -96,7 +97,7 @@ func NewReCAPTCHA(ReCAPTCHASecret string, version VERSION, timeout time.Duration
 }
 
 // Verify returns `nil` if no error and the client solved the challenge correctly
-func (r *ReCAPTCHA) Verify(challengeResponse string) error {
+func (r *ReCAPTCHA) Verify(challengeResponse string) (*ReCHAPTCHAResponse, error) {
 	body := reCHAPTCHARequest{Secret: r.Secret, Response: challengeResponse}
 	return r.confirm(body, VerifyOption{})
 }
@@ -111,9 +112,9 @@ type VerifyOption struct {
 	RemoteIP       string
 }
 
-// VerifyWithOptions returns `nil` if no error and the client solved the challenge correctly and all options are matching
+// VerifyWithOptions returns the ReCaptchaResponse and an error which is `nil` if no error and the client solved the challenge correctly and all options are matching
 // `Threshold` and `Action` are ignored when using V2 version
-func (r *ReCAPTCHA) VerifyWithOptions(challengeResponse string, options VerifyOption) error {
+func (r *ReCAPTCHA) VerifyWithOptions(challengeResponse string, options VerifyOption) (*ReCHAPTCHAResponse, error) {
 	var body reCHAPTCHARequest
 	if options.RemoteIP == "" {
 		body = reCHAPTCHARequest{Secret: r.Secret, Response: challengeResponse}
@@ -123,7 +124,7 @@ func (r *ReCAPTCHA) VerifyWithOptions(challengeResponse string, options VerifyOp
 	return r.confirm(body, options)
 }
 
-func (r *ReCAPTCHA) confirm(recaptcha reCHAPTCHARequest, options VerifyOption) (Err error) {
+func (r *ReCAPTCHA) confirm(recaptcha reCHAPTCHARequest, options VerifyOption) (recaptchaResponse *ReCHAPTCHAResponse, Err error) {
 	Err = nil
 	var formValues url.Values
 	if recaptcha.RemoteIP != "" {
@@ -142,56 +143,56 @@ func (r *ReCAPTCHA) confirm(recaptcha reCHAPTCHARequest, options VerifyOption) (
 		Err = &Error{msg: fmt.Sprintf("couldn't read response body: '%s'", err), RequestError: true}
 		return
 	}
-	var result reCHAPTCHAResponse
-	err = json.Unmarshal(resultBody, &result)
+	recaptchaResponse = &ReCHAPTCHAResponse{}
+	err = json.Unmarshal(resultBody, recaptchaResponse)
 	if err != nil {
 		Err = &Error{msg: fmt.Sprintf("invalid response body json: '%s'", err), RequestError: true}
 		return
 	}
 
-	if result.ErrorCodes != nil {
-		Err = &Error{msg: fmt.Sprintf("remote error codes: %v", result.ErrorCodes), ErrorCodes: result.ErrorCodes}
+	if recaptchaResponse.ErrorCodes != nil {
+		Err = &Error{msg: fmt.Sprintf("remote error codes: %v", recaptchaResponse.ErrorCodes), ErrorCodes: recaptchaResponse.ErrorCodes}
 		return
 	}
 
-	if !result.Success && recaptcha.RemoteIP != "" {
+	if !recaptchaResponse.Success && recaptcha.RemoteIP != "" {
 		Err = &Error{msg: fmt.Sprintf("invalid challenge solution or remote IP")}
 		return
 	}
 
-	if !result.Success {
+	if !recaptchaResponse.Success {
 		Err = &Error{msg: fmt.Sprintf("invalid challenge solution")}
 		return
 	}
 
-	if options.Hostname != "" && options.Hostname != result.Hostname {
-		Err = &Error{msg: fmt.Sprintf("invalid response hostname '%s', while expecting '%s'", result.Hostname, options.Hostname)}
+	if options.Hostname != "" && options.Hostname != recaptchaResponse.Hostname {
+		Err = &Error{msg: fmt.Sprintf("invalid response hostname '%s', while expecting '%s'", recaptchaResponse.Hostname, options.Hostname)}
 		return
 	}
 
-	if options.ApkPackageName != "" && options.ApkPackageName != result.ApkPackageName {
-		Err = &Error{msg: fmt.Sprintf("invalid response ApkPackageName '%s', while expecting '%s'", result.ApkPackageName, options.ApkPackageName)}
+	if options.ApkPackageName != "" && options.ApkPackageName != recaptchaResponse.ApkPackageName {
+		Err = &Error{msg: fmt.Sprintf("invalid response ApkPackageName '%s', while expecting '%s'", recaptchaResponse.ApkPackageName, options.ApkPackageName)}
 		return
 	}
 
 	if options.ResponseTime != 0 {
-		duration := r.horloge.Since(result.ChallengeTS)
+		duration := r.horloge.Since(recaptchaResponse.ChallengeTS)
 		if options.ResponseTime < duration {
 			Err = &Error{msg: fmt.Sprintf("time spent in resolving challenge '%fs', while expecting maximum '%fs'", duration.Seconds(), options.ResponseTime.Seconds())}
 			return
 		}
 	}
 	if r.Version == V3 {
-		if options.Action != "" && options.Action != result.Action {
-			Err = &Error{msg: fmt.Sprintf("invalid response action '%s', while expecting '%s'", result.Action, options.Action)}
+		if options.Action != "" && options.Action != recaptchaResponse.Action {
+			Err = &Error{msg: fmt.Sprintf("invalid response action '%s', while expecting '%s'", recaptchaResponse.Action, options.Action)}
 			return
 		}
-		if options.Threshold != 0 && options.Threshold > result.Score {
-			Err = &Error{msg: fmt.Sprintf("received score '%f', while expecting minimum '%f'", result.Score, options.Threshold)}
+		if options.Threshold != 0 && options.Threshold > recaptchaResponse.Score {
+			Err = &Error{msg: fmt.Sprintf("received score '%f', while expecting minimum '%f'", recaptchaResponse.Score, options.Threshold)}
 			return
 		}
-		if options.Threshold == 0 && DefaultThreshold > result.Score {
-			Err = &Error{msg: fmt.Sprintf("received score '%f', while expecting minimum '%f'", result.Score, DefaultThreshold)}
+		if options.Threshold == 0 && DefaultThreshold > recaptchaResponse.Score {
+			Err = &Error{msg: fmt.Sprintf("received score '%f', while expecting minimum '%f'", recaptchaResponse.Score, DefaultThreshold)}
 			return
 		}
 	}
