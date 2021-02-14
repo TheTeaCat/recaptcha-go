@@ -97,7 +97,13 @@ func NewReCAPTCHA(ReCAPTCHASecret string, version VERSION, timeout time.Duration
 }
 
 // Verify returns `nil` if no error and the client solved the challenge correctly
-func (r *ReCAPTCHA) Verify(challengeResponse string) (*ReCHAPTCHAResponse, error) {
+func (r *ReCAPTCHA) Verify(challengeResponse string) error {
+	_, err := r.VerifyWithResponse(challengeResponse)
+	return err
+}
+
+// VerifyWithResponse returns the same as Verify, except with the addition of the ReCAPTCHAResponse.
+func (r *ReCAPTCHA) VerifyWithResponse(challengeResponse string) (*ReCHAPTCHAResponse, error) {
 	body := reCHAPTCHARequest{Secret: r.Secret, Response: challengeResponse}
 	return r.confirm(body, VerifyOption{})
 }
@@ -112,9 +118,15 @@ type VerifyOption struct {
 	RemoteIP       string
 }
 
-// VerifyWithOptions returns the ReCaptchaResponse and an error which is `nil` if no error and the client solved the challenge correctly and all options are matching
+// VerifyWithOptions returns `nil` if no error and the client solved the challenge correctly and all options are matching
 // `Threshold` and `Action` are ignored when using V2 version
-func (r *ReCAPTCHA) VerifyWithOptions(challengeResponse string, options VerifyOption) (*ReCHAPTCHAResponse, error) {
+func (r *ReCAPTCHA) VerifyWithOptions(challengeResponse string, options VerifyOption) error {
+	_, err := r.VerifyWithOptionsAndResponse(challengeResponse, options)
+	return err
+}
+
+// VerifyWithOptionsAndResponse returns the same as VerifyWithOptions, except with the addition of the ReCAPTCHAResponse.
+func (r *ReCAPTCHA) VerifyWithOptionsAndResponse(challengeResponse string, options VerifyOption) (*ReCHAPTCHAResponse, error) {
 	var body reCHAPTCHARequest
 	if options.RemoteIP == "" {
 		body = reCHAPTCHARequest{Secret: r.Secret, Response: challengeResponse}
